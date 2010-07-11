@@ -1,11 +1,11 @@
-## Interface: 30200
+## Interface: 33500
 ## LoadOnDemand: 1
 ## Title: Broker Leveltime
 ## Notes: Records time for each level while levelling
 ## Author: Michael Irving
 ## X-Category: Broker
 
-LibStub\LibStub.lua
-CallbackHandler-1.0\CallbackHandler-1.0.xml
-libdatabroker-1-1\LibDataBroker-1.1.lua
+libs\LibStub\LibStub.lua
+libs\CallbackHandler-1.0\CallbackHandler-1.0.xml
+libs\libdatabroker-1-1\LibDataBroker-1.1.lua
 Leveltime.lua
