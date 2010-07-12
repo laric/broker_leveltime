@@ -12,7 +12,6 @@ local dataobj = ldb:NewDataObject("Broker_Leveltime", {
 })
 
 function dataobj:OnTooltipShow()
-	self:AddLine("Starting point")
 	local tottime = addon.totaltime + addon.difftime
 	local lvltime = addon.playedthislevel + addon.difftime
 	local totdays = floor( tottime / (60*60*24))
@@ -57,6 +56,12 @@ function addon:TIME_PLAYED_MSG(eventName, total, level)
   self.basetime = time()
 end
 
+function addon:PLAYER_LEVEL_UP(eventName,level, hp, mp, talentPoints, strength, agility, stamina, intellect, spirit)
+  RequestTimePlayed()
+  if not self.db.char.level then self.db.char.level={} end
+  self.db.char.level[level].time = time()
+end
+
 function addon:MinTimer()
   self.difftime = time() - self.basetime
 end
@@ -64,6 +69,7 @@ end
 function addon:OnInitialize()
   self.db = LibStub("AceDB-3.0"):New("LeveltimeDB")
   self:RegisterEvent("TIME_PLAYED_MSG")
+  self:RegisterEvent("PLAYER_LEVEL_UP")
   self.minuteTimer = self:ScheduleRepeatingTimer("MinTimer", 60)
   RequestTimePlayed()
 end
