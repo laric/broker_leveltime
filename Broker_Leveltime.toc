@@ -4,6 +4,7 @@
 ## Notes: Records time for each level while levelling
 ## Author: Michael Irving
 ## X-Category: Broker
+## SavedVariables: LeveltimeDB
 
 libs\LibStub\LibStub.lua
 libs\CallbackHandler-1.0\CallbackHandler-1.0.xml

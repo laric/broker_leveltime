@@ -1,3 +1,4 @@
+local addon = LibStub("AceAddon-3.0"):NewAddon("Broker_Leveltime","AceTimer-3.0","AceEvent-3.0")
 local f = CreateFrame("frame")
 local ldb = LibStub:GetLibrary("LibDataBroker-1.1")
 local dataobj = ldb:NewDataObject("Broker_Leveltime", {
@@ -20,4 +21,8 @@ end
 
 function dataobj:OnLeave()
 	GameTooltip:Hide()
+end
+
+function addon:OnInitialize()
+  self.db = LibStub("AceDB-3.0"):New("LeveltimeDB")
 end
