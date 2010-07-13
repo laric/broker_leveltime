@@ -34,35 +34,36 @@ function dataobj:OnTooltipShow()
 	else
 	  self:AddLine("Time played this level: " .. lvlmins .. " min(s)")
     end
-	if addon.db.char.level[UnitLevel("player")] then
-		if addon.db.char.level[UnitLevel("player")].time then 
-		  self:AddLine("Current level was achieved ".. date("%c",addon.db.char.level[UnitLevel("player")].time))
+	if addon.db.char.level then
+		if addon.db.char.level[UnitLevel("player")] then
+			if addon.db.char.level[UnitLevel("player")].time then 
+			  self:AddLine("Current level was achieved ".. date("%c",addon.db.char.level[UnitLevel("player")].time))
+			end
 		end
-	end
-	
-	local printlevel=UnitLevel("player") - 1
-	if printlevel < 0 then printlevel = 1 end
-	local printtolevel = UnitLevel("player") - 5
-	if printtolevel < 0 then printtolevel = 1 end
-	while printlevel >= printtolevel do
-	  if addon.db.char.level[printlevel] then
-	    if addon.db.char.level[printlevel].time then 
-		  self:AddLine("Level "..printlevel.." was achieved ".. date("%c",addon.db.char.level[printlevel].time))
+		local printlevel=UnitLevel("player") - 1
+		if printlevel < 0 then printlevel = 1 end
+		local printtolevel = UnitLevel("player") - 5
+		if printtolevel < 0 then printtolevel = 1 end
+		while printlevel >= printtolevel do
+		  if addon.db.char.level[printlevel] then
+			if addon.db.char.level[printlevel].time then 
+			  self:AddLine("Level "..printlevel.." was achieved ".. date("%c",addon.db.char.level[printlevel].time))
+			end
+			if addon.db.char.level[printlevel].playtime then
+			  local tmptime = addon.db.char.level[printlevel].playtime
+			  local ptdays = floor(tmptime / (60*60*24))
+			  local pthours = floor((tmptime - (ptdays * 60*60*24)) / (60*60))
+			  local ptmins = floor((tmptime - (ptdays * 60*60*24) - (pthours *60*60)) / 60)
+			  local ptstr = ""
+			  if ptdays>0 then ptstr = ptdays.." day(s) " end
+			  if pthours>0 then ptstr = ptstr..pthours.." hour(s) " end
+			  ptstr = ptstr..ptmins.." min(s)" 
+			  self:AddLine("Level "..printlevel.." playtime was "..ptstr)
+			end
+		  end
+		  
+		  printlevel = printlevel-1
 		end
-	    if addon.db.char.level[printlevel].playtime then
-		  local tmptime = addon.db.char.level[printlevel].playtime
-		  local ptdays = floor(tmptime / (60*60*24))
-		  local pthours = floor((tmptime - (ptdays * 60*60*24)) / (60*60))
-		  local ptmins = floor((tmptime - (ptdays * 60*60*24) - (pthours *60*60)) / 60)
-		  local ptstr = ""
-		  if ptdays>0 then ptstr = ptdays.." day(s) " end
-		  if pthours>0 then ptstr = ptstr..pthours.." hour(s) " end
-		  ptstr = ptstr..ptmins.." min(s)" 
-		  self:AddLine("Level "..printlevel.." playtime was "..ptstr)
-		end
-	  end
-	  
-	  printlevel = printlevel-1
 	end
 	
 	
