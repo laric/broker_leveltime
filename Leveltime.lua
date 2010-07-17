@@ -46,8 +46,9 @@ function dataobj:OnTooltipShow()
 		if printtolevel < 0 then printtolevel = 1 end
 		while printlevel >= printtolevel do
 		  if addon.db.char.level[printlevel] then
-			if addon.db.char.level[printlevel].time then 
-			  self:AddLine("Level "..printlevel.." was achieved ".. date("%c",addon.db.char.level[printlevel].time))
+		    local tempstr = ""
+			if addon.db.char.level[printlevel].time then
+			  tempstr = "Level "..printlevel.." was achieved ".. date("%c",addon.db.char.level[printlevel].time)
 			end
 			if addon.db.char.level[printlevel].playtime then
 			  local tmptime = addon.db.char.level[printlevel].playtime
@@ -58,8 +59,10 @@ function dataobj:OnTooltipShow()
 			  if ptdays>0 then ptstr = ptdays.." day(s) " end
 			  if pthours>0 then ptstr = ptstr..pthours.." hour(s) " end
 			  ptstr = ptstr..ptmins.." min(s)" 
-			  self:AddLine("Level "..printlevel.." playtime was "..ptstr)
+			  if tempstr == "" then tempstr = "Level "..printlevel end
+			  tempstr= tempstr.." playtime was "..ptstr
 			end
+			if tempstr ~= "" then self:AddLine(tempstr) end
 		  end
 		  
 		  printlevel = printlevel-1
