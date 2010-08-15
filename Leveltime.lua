@@ -34,6 +34,8 @@ function dataobj:OnTooltipShow()
 	else
 	  self:AddLine("Time played this level: " .. lvlmins .. " min(s)")
     end
+	
+	self:AddLine("XP per hour this level: " .. floor(UnitXP("player") / ( (lvltime / (60*60)))))
 	if addon.db.char.level then
 		if addon.db.char.level[UnitLevel("player")] then
 			if addon.db.char.level[UnitLevel("player")].time then 
@@ -84,13 +86,15 @@ function dataobj:OnLeave()
 	GameTooltip:Hide()
 end
 
-function addon:TIME_PLAYED_MSG(eventName, total, level)
+function addon:TIME_PLAYED_MSG(eventName,...)
+  local total,level = ...
   self.totaltime = total
   self.playedthislevel = level
   self.basetime = time()
 end
 
-function addon:PLAYER_LEVEL_UP(eventName,level, hp, mp, talentPoints, strength, agility, stamina, intellect, spirit)
+function addon:PLAYER_LEVEL_UP(eventName,...)
+  local level = ...
   if not self.db.char.level then self.db.char.level={} end
   if not self.db.char.level[level] then self.db.char.level[level]={} end
   if not self.db.char.level[level-1] then self.db.char.level[level-1]={} end
