@@ -3,6 +3,7 @@ addon.totaltime = 0
 addon.playedthislevel = 0
 addon.basetime = 0
 addon.difftime = 0
+addon.maxlevel = 80 -- This line must change for cataclysm
 local f = CreateFrame("frame")
 local ldb = LibStub:GetLibrary("LibDataBroker-1.1")
 local dataobj = ldb:NewDataObject("Broker_Leveltime", {
@@ -34,8 +35,9 @@ function dataobj:OnTooltipShow()
 	else
 	  self:AddLine("Time played this level: " .. lvlmins .. " min(s)")
     end
-	
-	self:AddLine("XP per hour this level: " .. floor(UnitXP("player") / ( (lvltime / (60*60)))))
+	if (UnitXP("player") >0) and (lvltime >0) and (UnitLevel("player") < addon.maxlevel) then
+	  self:AddLine("XP per hour this level: " .. floor(UnitXP("player") / ( (lvltime / (60*60)))))
+	end
 	if addon.db.char.level then
 		if addon.db.char.level[UnitLevel("player")] then
 			if addon.db.char.level[UnitLevel("player")].time then 
