@@ -9,7 +9,7 @@ local ldb = LibStub:GetLibrary("LibDataBroker-1.1")
 local dataobj = ldb:NewDataObject("Broker_Leveltime", {
     type = "data source",
     icon = "Interface\\Icons\\Spell_Holy_BorrowedTime",
-	text = "Broker_Leveltime",
+--	text = "Broker_Leveltime",
 })
 
 function dataobj:OnTooltipShow()
