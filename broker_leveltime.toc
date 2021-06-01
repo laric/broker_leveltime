@@ -1,10 +1,16 @@
-## Interface: 80000
+## Interface: 90005
+## Interface-Classic: 11307
+## Interface-BCC: 20501
 ## Title: Broker Leveltime
 ## Notes: Records time for each level while levelling
 ## Author: Michael Irving
 ## X-Category: Broker
 ## SavedVariables: LeveltimeDB
-
+## X-Curse-Project-ID: 24724
+## X-WoWI-ID: 17194
+## X-Wago-ID: PANzL0K4
+## X-Website: https://github.com/laric/broker_leveltime
+## Version: @project-version@
 
 libs\LibStub\LibStub.lua
 libs\CallbackHandler-1.0\CallbackHandler-1.0.xml
