@@ -9,7 +9,6 @@ local ldb = LibStub:GetLibrary("LibDataBroker-1.1")
 local dataobj = ldb:NewDataObject("Broker_Leveltime", {
     type = "data source",
     icon = "Interface\\Icons\\spell_nature_timestop",
---	text = "Broker_Leveltime",
 })
 
 function dataobj:OnTooltipShow()
