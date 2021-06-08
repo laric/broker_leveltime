@@ -37,16 +37,16 @@ jobs:
 
       # once cloned, we just run the GitHub Action for the packager project
       - name: Package and release
-        uses: BigWigsMods/packager
+        uses: BigWigsMods/packager@v1.0.1
 
       # for the Classic version of the game
       - name: Package and release for Classic
-        uses: BigWigsMods/packager
+        uses: BigWigsMods/packager@v1.0.1
         with:
           args: -g classic
 
       # for the Classic version of the game
       - name: Package and release for BCC
-        uses: BigWigsMods/packager
+        uses: BigWigsMods/packager@v1.0.1
         with:
           args: -g bcc
