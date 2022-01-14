@@ -1,6 +1,6 @@
-## Interface: 90005
-## Interface-Classic: 11307
-## Interface-BCC: 20501
+## Interface: 90105
+## Interface-Classic: 11401
+## Interface-BCC: 20502
 ## Title: Broker Leveltime
 ## Notes: Records time for each level while levelling
 ## Author: Michael Irving
