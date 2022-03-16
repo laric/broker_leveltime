@@ -81,6 +81,7 @@ function dataobj:OnEnter()
 	GameTooltip:ClearLines()
 	dataobj.OnTooltipShow(GameTooltip)
 	GameTooltip:Show()
+	GameTooltip:SetClampedToScreen(true)
 end
 
 function dataobj:OnLeave()
