@@ -41,13 +41,19 @@ jobs:
         uses: BigWigsMods/packager@v2
 
       # for the Classic version of the game
-      #- name: Package and release for Classic
-      #  uses: BigWigsMods/packager@v1
-      #  with:
-      #    args: -g classic
+      - name: Package and release for Classic
+        uses: BigWigsMods/packager@v2
+        with:
+          args: -g classic
 
       # for the Classic version of the game
-      #- name: Package and release for BCC
-      #  uses: BigWigsMods/packager@v1
-      #  with:
-      #    args: -g bcc
+      - name: Package and release for BCC
+        uses: BigWigsMods/packager@v2
+        with:
+          args: -g bcc
+
+      # for the Wrath version of the game
+      - name: Package and release for Classic
+        uses: BigWigsMods/packager@v2
+        with:
+          args: -g wrath
