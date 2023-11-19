@@ -45,3 +45,9 @@ jobs:
         uses: BigWigsMods/packager@v2
         with:
           args: -g wrath
+
+      # for the Classic version of the game
+      - name: Package and release for Wrath
+        uses: BigWigsMods/packager@v2
+        with:
+          args: -g classic
