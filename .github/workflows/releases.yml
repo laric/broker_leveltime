@@ -41,13 +41,13 @@ jobs:
         uses: BigWigsMods/packager@v2
 
       # for the Wrath version of the game
-      - name: Package and release for Wrath
+      - name: Package and release for Cata
         uses: BigWigsMods/packager@v2
         with:
-          args: -g wrath
+          args: -g cata
 
       # for the Classic version of the game
-      - name: Package and release for Wrath
+      - name: Package and release for Classic
         uses: BigWigsMods/packager@v2
         with:
           args: -g classic
