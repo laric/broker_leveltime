@@ -1,80 +1,104 @@
-local addon = LibStub("AceAddon-3.0"):NewAddon("Broker_Leveltime","AceTimer-3.0","AceEvent-3.0")
-addon.totaltime = 0
-addon.playedthislevel = 0
-addon.basetime = 0
-addon.difftime = 0
-addon.maxlevel = MAX_PLAYER_LEVEL
-local f = CreateFrame("frame")
-local ldb = LibStub:GetLibrary("LibDataBroker-1.1")
-local dataobj = ldb:NewDataObject("Broker_Leveltime", {
-    type = "data source",
-    icon = "Interface\\Icons\\spell_nature_timestop",
-})
+--[[
+Broker_Leveltime: a LibDataBroker data source that tracks time played per level.
 
-function dataobj:OnTooltipShow()
-	local tottime = addon.totaltime + addon.difftime
-	local lvltime = addon.playedthislevel + addon.difftime
-	local totdays = floor( tottime / (60*60*24))
-	local tothours = floor( (tottime-(totdays*60*60*24)) / (60*60))
-	local totmins = floor( (tottime-(totdays*60*60*24)-(tothours*60*60)) / 60 )
-	if totdays > 0  then
-	  self:AddLine("Total time played: " .. totdays .. " day(s) " .. tothours .. " hour(s) " .. totmins .. " min(s)")
-	elseif tothours > 0 then 
-	  self:AddLine("Total time played: " .. tothours .. " hour(s) " .. totmins .. " min(s)")
-	else
-	  self:AddLine("Total time played: " .. totmins .. " min(s)")
-    end	
-	local lvldays = floor( lvltime / (60*60*24))
-	local lvlhours = floor( (lvltime-(lvldays*60*60*24)) / (60*60))
-	local lvlmins = floor( (lvltime-(lvldays*60*60*24)-(lvlhours*60*60)) / 60 )
-	if lvldays > 0  then
-	  self:AddLine("Time played this level: " .. lvldays .. " day(s) " .. lvlhours .. " hour(s) " .. lvlmins .. " min(s)")
-	elseif lvlhours > 0 then 
-	  self:AddLine("Time played this level: " .. lvlhours .. " hour(s) " .. lvlmins .. " min(s)")
-	else
-	  self:AddLine("Time played this level: " .. lvlmins .. " min(s)")
-    end
-	if (UnitXP("player") >0) and (lvltime >0) and (UnitLevel("player") < addon.maxlevel) then
-	  self:AddLine("XP per hour this level: " .. floor(UnitXP("player") / ( (lvltime / (60*60)))))
+How it works:
+  * /played data (WoW's TIME_PLAYED_MSG) gives the total and per-level time at one
+    moment. A 1-second timer tracks the seconds elapsed since then (difftime), so the
+    tooltip stays live without re-requesting /played.
+  * On level-up, the time of the level-up and the playtime of the finished level are
+    stored per character in LeveltimeDB (db.char.level[level]).
+
+Saved data layout:
+  LeveltimeDB.char.<char>.level[n] = {
+    time     = <unix time when level n was reached>,
+    playtime = <seconds spent at level n before levelling up>,
+  }
+]]
+
+local addon = LibStub("AceAddon-3.0"):NewAddon("Broker_Leveltime", "AceTimer-3.0", "AceEvent-3.0")
+local ldb = LibStub("LibDataBroker-1.1")
+
+local SECONDS_PER_MINUTE = 60
+local SECONDS_PER_HOUR = 60 * SECONDS_PER_MINUTE
+local SECONDS_PER_DAY = 24 * SECONDS_PER_HOUR
+local HISTORY_LEVELS = 5 -- how many previous levels the tooltip lists
+
+-- Runtime state, refreshed from TIME_PLAYED_MSG and the 1-second timer.
+addon.totaltime = 0        -- total /played at last TIME_PLAYED_MSG
+addon.playedthislevel = 0  -- /played at current level at last TIME_PLAYED_MSG
+addon.basetime = 0         -- time() of last TIME_PLAYED_MSG
+addon.difftime = 0         -- seconds elapsed since basetime
+addon.maxlevel = MAX_PLAYER_LEVEL
+
+--- Formats a number of seconds as "2 day(s) 3 hour(s) 4 min(s)".
+-- Leading units that are zero are dropped; minutes are always shown.
+-- @param seconds number of seconds (fractions are floored away)
+-- @return string
+local function FormatDuration(seconds)
+	local days = floor(seconds / SECONDS_PER_DAY)
+	local hours = floor((seconds % SECONDS_PER_DAY) / SECONDS_PER_HOUR)
+	local mins = floor((seconds % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE)
+	if days > 0 then
+		return days .. " day(s) " .. hours .. " hour(s) " .. mins .. " min(s)"
+	elseif hours > 0 then
+		return hours .. " hour(s) " .. mins .. " min(s)"
 	end
-	if addon.db.char.level then
-		if addon.db.char.level[UnitLevel("player")] then
-			if addon.db.char.level[UnitLevel("player")].time then 
-			  self:AddLine("Current level was achieved ".. date("%c",addon.db.char.level[UnitLevel("player")].time))
-			end
-		end
-		local printlevel=UnitLevel("player") - 1
-		if printlevel < 0 then printlevel = 1 end
-		local printtolevel = UnitLevel("player") - 5
-		if printtolevel < 0 then printtolevel = 1 end
-		while printlevel >= printtolevel do
-		  if addon.db.char.level[printlevel] then
-		    local tempstr = ""
-			if addon.db.char.level[printlevel].time then
-			  tempstr = "Level "..printlevel.." was achieved ".. date("%c",addon.db.char.level[printlevel].time)
-			end
-			if addon.db.char.level[printlevel].playtime then
-			  local tmptime = addon.db.char.level[printlevel].playtime
-			  local ptdays = floor(tmptime / (60*60*24))
-			  local pthours = floor((tmptime - (ptdays * 60*60*24)) / (60*60))
-			  local ptmins = floor((tmptime - (ptdays * 60*60*24) - (pthours *60*60)) / 60)
-			  local ptstr = ""
-			  if ptdays>0 then ptstr = ptdays.." day(s) " end
-			  if pthours>0 then ptstr = ptstr..pthours.." hour(s) " end
-			  ptstr = ptstr..ptmins.." min(s)" 
-			  if tempstr == "" then tempstr = "Level "..printlevel end
-			  tempstr= tempstr.." playtime was "..ptstr
-			end
-			if tempstr ~= "" then self:AddLine(tempstr) end
-		  end
-		  
-		  printlevel = printlevel-1
-		end
-	end
-	
-	
+	return mins .. " min(s)"
 end
 
+--- Adds one tooltip line describing a past level, if any data was recorded for it.
+-- The line combines whichever of "achieved at" and "playtime" is known, and is
+-- skipped entirely when neither is.
+-- @param tooltip the tooltip to add the line to
+-- @param level the level to describe
+local function AddLevelHistory(tooltip, level)
+	local entry = addon.db.char.level and addon.db.char.level[level]
+	if not entry then return end
+
+	local text
+	if entry.time then
+		text = "Level " .. level .. " was achieved " .. date("%c", entry.time)
+	end
+	if entry.playtime then
+		text = (text or "Level " .. level) .. " playtime was " .. FormatDuration(entry.playtime)
+	end
+	if text then tooltip:AddLine(text) end
+end
+
+local dataobj = ldb:NewDataObject("Broker_Leveltime", {
+	type = "data source",
+	icon = "Interface\\Icons\\spell_nature_timestop",
+})
+
+--- Fills a tooltip with total time, time this level, XP/hour and recent level history.
+-- Called by display addons with `self` as their tooltip, and by OnEnter below with
+-- GameTooltip.
+function dataobj:OnTooltipShow()
+	local level = UnitLevel("player")
+	local xp = UnitXP("player")
+	local totaltime = addon.totaltime + addon.difftime
+	local leveltime = addon.playedthislevel + addon.difftime
+
+	self:AddLine("Total time played: " .. FormatDuration(totaltime))
+	self:AddLine("Time played this level: " .. FormatDuration(leveltime))
+
+	-- XP/hour is meaningless at max level or before any XP/time has accrued.
+	if xp > 0 and leveltime > 0 and level < addon.maxlevel then
+		self:AddLine("XP per hour this level: " .. floor(xp / (leveltime / SECONDS_PER_HOUR)))
+	end
+
+	local current = addon.db.char.level and addon.db.char.level[level]
+	if current and current.time then
+		self:AddLine("Current level was achieved " .. date("%c", current.time))
+	end
+
+	-- Most recent first, down to HISTORY_LEVELS levels back (never below level 1).
+	for past = level - 1, math.max(1, level - HISTORY_LEVELS), -1 do
+		AddLevelHistory(self, past)
+	end
+end
+
+--- Shows the tooltip below the display frame, for displays that don't build their own.
 function dataobj:OnEnter()
 	GameTooltip:SetOwner(self, "ANCHOR_NONE")
 	GameTooltip:SetPoint("TOPLEFT", self, "BOTTOMLEFT")
@@ -88,31 +112,41 @@ function dataobj:OnLeave()
 	GameTooltip:Hide()
 end
 
-function addon:TIME_PLAYED_MSG(eventName,...)
-  local total,level = ...
-  self.totaltime = total
-  self.playedthislevel = level
-  self.basetime = time()
+--- Event handler: /played result. Resets the baseline the live timer counts from.
+-- @param total seconds played on this character
+-- @param level seconds played at the current level
+function addon:TIME_PLAYED_MSG(_, total, level)
+	self.totaltime = total
+	self.playedthislevel = level
+	self.basetime = time()
 end
 
-function addon:PLAYER_LEVEL_UP(eventName,...)
-  local level = ...
-  if not self.db.char.level then self.db.char.level={} end
-  if not self.db.char.level[level] then self.db.char.level[level]={} end
-  if not self.db.char.level[level-1] then self.db.char.level[level-1]={} end
-  self.db.char.level[level].time = time()
-  self.db.char.level[level-1].playtime = self.playedthislevel + self.difftime
-  RequestTimePlayed()
+--- Event handler: level-up. Records when the new level was reached and how long the
+-- previous level took, then requests fresh /played data.
+-- @param level the new level
+function addon:PLAYER_LEVEL_UP(_, level)
+	local levels = self.db.char.level
+	if not levels then
+		levels = {}
+		self.db.char.level = levels
+	end
+	levels[level] = levels[level] or {}
+	levels[level - 1] = levels[level - 1] or {}
+
+	levels[level].time = time()
+	levels[level - 1].playtime = self.playedthislevel + self.difftime
+	RequestTimePlayed()
 end
 
-function addon:MinTimer()
-  self.difftime = time() - self.basetime
+--- Timer callback (every second): updates seconds elapsed since the last /played.
+function addon:UpdateDiffTime()
+	self.difftime = time() - self.basetime
 end
 
 function addon:OnInitialize()
-  self.db = LibStub("AceDB-3.0"):New("LeveltimeDB")
-  self:RegisterEvent("TIME_PLAYED_MSG")
-  self:RegisterEvent("PLAYER_LEVEL_UP")
-  self.minuteTimer = self:ScheduleRepeatingTimer("MinTimer", 1)
-  RequestTimePlayed()
+	self.db = LibStub("AceDB-3.0"):New("LeveltimeDB")
+	self:RegisterEvent("TIME_PLAYED_MSG")
+	self:RegisterEvent("PLAYER_LEVEL_UP")
+	self:ScheduleRepeatingTimer("UpdateDiffTime", 1)
+	RequestTimePlayed() -- triggers TIME_PLAYED_MSG to seed the baseline
 end
