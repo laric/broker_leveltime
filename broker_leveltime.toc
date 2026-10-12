@@ -1,6 +1,4 @@
-## Interface: 110005
-## Interface-Classic: 11503
-## Interface-Cata: 40400
+## Interface: 16001
 ## Title: Broker Leveltime
 ## Notes: Records time for each level while levelling
 ## Author: Michael Irving
