@@ -36,18 +36,8 @@ jobs:
         with:
           fetch-depth: 0  # gets git history for changelogs
 
-      # once cloned, we just run the GitHub Action for the packager project
-      - name: Package and release
-        uses: BigWigsMods/packager@v2
-
-      # for the Wrath version of the game
-      - name: Package and release for Cata
+      # for the Forever version of the game
+      - name: Package and release for Forever
         uses: BigWigsMods/packager@v2
         with:
-          args: -g cata
-
-      # for the Classic version of the game
-      - name: Package and release for Classic
-        uses: BigWigsMods/packager@v2
-        with:
-          args: -g classic
+          args: -g forever
