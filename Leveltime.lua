@@ -10,6 +10,7 @@ How it works:
 
 Saved data layout:
   LeveltimeDB.char.<char>.level[n] = {
+    level    = n,  -- explicit, since a contiguous table is saved as a bare array
     time     = <unix time when level n was reached>,
     playtime = <seconds spent at level n before levelling up>,
   }
@@ -28,7 +29,14 @@ addon.totaltime = 0        -- total /played at last TIME_PLAYED_MSG
 addon.playedthislevel = 0  -- /played at current level at last TIME_PLAYED_MSG
 addon.basetime = 0         -- time() of last TIME_PLAYED_MSG
 addon.difftime = 0         -- seconds elapsed since basetime
-addon.maxlevel = MAX_PLAYER_LEVEL
+
+--- Returns the max player level. Resolved on demand because the MAX_PLAYER_LEVEL
+-- global is not reliably set when this file loads (it was nil, breaking the tooltip).
+local function GetMaxLevel()
+	return GetMaxLevelForPlayerExpansion and GetMaxLevelForPlayerExpansion()
+		or MAX_PLAYER_LEVEL
+		or math.huge
+end
 
 --- Formats a number of seconds as "2 day(s) 3 hour(s) 4 min(s)".
 -- Leading units that are zero are dropped; minutes are always shown.
@@ -65,14 +73,32 @@ local function AddLevelHistory(tooltip, level)
 	if text then tooltip:AddLine(text) end
 end
 
+--- Returns the saved record for a level, creating it (with its explicit level field)
+-- if missing.
+-- @param level the level to look up
+-- @return table the record
+local function GetLevelEntry(level)
+	local levels = addon.db.char.level
+	if not levels then
+		levels = {}
+		addon.db.char.level = levels
+	end
+	local entry = levels[level]
+	if not entry then
+		entry = { level = level }
+		levels[level] = entry
+	end
+	return entry
+end
+
 local dataobj = ldb:NewDataObject("Broker_Leveltime", {
 	type = "data source",
 	icon = "Interface\\Icons\\spell_nature_timestop",
 })
 
 --- Fills a tooltip with total time, time this level, XP/hour and recent level history.
--- Called by display addons with `self` as their tooltip, and by OnEnter below with
--- GameTooltip.
+-- Display addons (Bazooka etc.) call this with their own tooltip as `self` and handle
+-- anchoring and hiding themselves, so no OnEnter/OnLeave is defined.
 function dataobj:OnTooltipShow()
 	local level = UnitLevel("player")
 	local xp = UnitXP("player")
@@ -83,7 +109,7 @@ function dataobj:OnTooltipShow()
 	self:AddLine("Time played this level: " .. FormatDuration(leveltime))
 
 	-- XP/hour is meaningless at max level or before any XP/time has accrued.
-	if xp > 0 and leveltime > 0 and level < addon.maxlevel then
+	if xp > 0 and leveltime > 0 and level < GetMaxLevel() then
 		self:AddLine("XP per hour this level: " .. floor(xp / (leveltime / SECONDS_PER_HOUR)))
 	end
 
@@ -96,20 +122,6 @@ function dataobj:OnTooltipShow()
 	for past = level - 1, math.max(1, level - HISTORY_LEVELS), -1 do
 		AddLevelHistory(self, past)
 	end
-end
-
---- Shows the tooltip below the display frame, for displays that don't build their own.
-function dataobj:OnEnter()
-	GameTooltip:SetOwner(self, "ANCHOR_NONE")
-	GameTooltip:SetPoint("TOPLEFT", self, "BOTTOMLEFT")
-	GameTooltip:ClearLines()
-	dataobj.OnTooltipShow(GameTooltip)
-	GameTooltip:Show()
-	GameTooltip:SetClampedToScreen(true)
-end
-
-function dataobj:OnLeave()
-	GameTooltip:Hide()
 end
 
 --- Event handler: /played result. Resets the baseline the live timer counts from.
@@ -125,16 +137,8 @@ end
 -- previous level took, then requests fresh /played data.
 -- @param level the new level
 function addon:PLAYER_LEVEL_UP(_, level)
-	local levels = self.db.char.level
-	if not levels then
-		levels = {}
-		self.db.char.level = levels
-	end
-	levels[level] = levels[level] or {}
-	levels[level - 1] = levels[level - 1] or {}
-
-	levels[level].time = time()
-	levels[level - 1].playtime = self.playedthislevel + self.difftime
+	GetLevelEntry(level).time = time()
+	GetLevelEntry(level - 1).playtime = self.playedthislevel + self.difftime
 	RequestTimePlayed()
 end
 
@@ -145,6 +149,10 @@ end
 
 function addon:OnInitialize()
 	self.db = LibStub("AceDB-3.0"):New("LeveltimeDB")
+	-- Migrate records saved before the explicit level field existed.
+	for level, entry in pairs(self.db.char.level or {}) do
+		entry.level = entry.level or level
+	end
 	self:RegisterEvent("TIME_PLAYED_MSG")
 	self:RegisterEvent("PLAYER_LEVEL_UP")
 	self:ScheduleRepeatingTimer("UpdateDiffTime", 1)
