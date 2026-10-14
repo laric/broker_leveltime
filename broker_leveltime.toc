@@ -1,4 +1,4 @@
-## Interface: 16001, 120100, 50504
+## Interface: 120100, 120105, 16001, 50504, 38000, 20506, 11508, 11509
 ## Title: Broker Leveltime
 ## Notes: Records time for each level while levelling
 ## Author: Michael Irving
