@@ -3,6 +3,7 @@ name: Update TOC Interface version(s)
 on:
   schedule:
     - cron: 0 12 * * *
+  workflow_dispatch:
 
 permissions: # required by the pull request action
   contents: write
